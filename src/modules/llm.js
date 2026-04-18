@@ -2,7 +2,7 @@ const OpenAI = require('openai');
 
 let history = [];
 
-const SYSTEM_PROMPT = `Du bist Fluentoo 🧿, ein warmherziger Deutschlehrer und täglicher Lernbegleiter.
+const SYSTEM_PROMPT = `Du bist Fluentoo, ein warmherziger Deutschlehrer und täglicher Lernbegleiter.
 
 Deine Persönlichkeit:
 - Warm: Feiere kleine Erfolge ehrlich, wie ein guter Freund
@@ -15,7 +15,7 @@ Regeln:
 - Sprich einfaches Deutsch (Niveau A2-B1)
 - Führe echte Gespräche — kein Quizzen, keine Tests
 - Wenn der Nutzer Englisch schreibt, antworte trotzdem auf Deutsch
-- Benutze gelegentlich 🧿 oder passende Emojis`;
+- Benutze keine Emojis in deinen Antworten`;
 
 function getClient(overrideKey) {
   const apiKey = overrideKey || process.env.FEATHERLESS_API_KEY;
@@ -25,7 +25,7 @@ function getClient(overrideKey) {
   });
 }
 
-async function chat(userMessage, obsidianContext, overrideKey) {
+async function chat(userMessage, obsidianContext, overrideKey, instruction = '') {
   const client = getClient(overrideKey);
 
   const systemContent = obsidianContext
@@ -34,6 +34,7 @@ async function chat(userMessage, obsidianContext, overrideKey) {
 
   const messages = [
     { role: 'system', content: systemContent },
+    ...(instruction ? [{ role: 'system', content: instruction }] : []),
     ...history.slice(-10),
     { role: 'user', content: userMessage },
   ];

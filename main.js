@@ -23,12 +23,12 @@ function createWindow() {
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
   mainWindow = new BrowserWindow({
-    width: 290,
-    height: 470,
+    width: 430,
+    height: 720,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
-    resizable: false,
+    resizable: true,
     skipTaskbar: false,
     hasShadow: false,
     webPreferences: {
@@ -39,7 +39,7 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
-  mainWindow.setPosition(width - 310, height - 490);
+  mainWindow.setPosition(width - 450, height - 740);
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   if (process.env.NODE_ENV === 'development') {
@@ -55,9 +55,12 @@ ipcMain.on('move-window', (event, dx, dy) => {
 });
 
 // Send user text → Featherless LLM → German response
-ipcMain.handle('send-message', async (event, userText) => {
+ipcMain.handle('send-message', async (event, payload) => {
   const llm = require('./src/modules/llm');
   const obsidian = require('./src/modules/obsidian');
+
+  const userText = typeof payload === 'string' ? payload : payload?.text || '';
+  const instruction = typeof payload === 'object' ? payload.instruction || '' : '';
 
   const s = getStore();
   const vaultPath = s.get('obsidianPath') || process.env.OBSIDIAN_VAULT_PATH || '';
@@ -65,15 +68,18 @@ ipcMain.handle('send-message', async (event, userText) => {
   const llmKey = s.get('featherlessKey') || process.env.FEATHERLESS_API_KEY || '';
 
   const obsidianContext = vaultPath ? await obsidian.getContext(vaultPath) : null;
-  return await llm.chat(userText, obsidianContext, llmKey);
+  return await llm.chat(userText, obsidianContext, llmKey, instruction);
 });
 
-// Audio buffer → Groq Whisper → transcription text
+// Audio buffer → STT provider → transcription text
 ipcMain.handle('transcribe-audio', async (event, uint8Array) => {
   const voice = require('./src/modules/voice');
   const s = getStore();
-  const groqKey = s.get('groqKey') || process.env.GROQ_API_KEY || '';
-  return await voice.transcribe(Buffer.from(uint8Array), groqKey);
+  return await voice.transcribe(Buffer.from(uint8Array), {
+    apiKey: s.get('groqKey') || process.env.STT_API_KEY || process.env.GROQ_API_KEY || '',
+    baseURL: process.env.STT_BASE_URL || 'https://api.groq.com/openai/v1',
+    model: process.env.STT_MODEL || 'whisper-large-v3-turbo',
+  });
 });
 
 // Text → CambAI TTS → base64 audio
@@ -89,6 +95,7 @@ ipcMain.handle('save-settings', async (event, settings) => {
   const s = getStore();
   if (settings.obsidianPath !== undefined) s.set('obsidianPath', settings.obsidianPath);
   if (settings.apiKey !== undefined) s.set('cambKey', settings.apiKey);
+  if (settings.groqKey !== undefined) s.set('groqKey', settings.groqKey);
   return true;
 });
 
@@ -97,6 +104,7 @@ ipcMain.handle('get-settings', async () => {
   return {
     obsidianPath: s.get('obsidianPath', process.env.OBSIDIAN_VAULT_PATH || ''),
     apiKey: s.get('cambKey', ''),
+    groqKey: s.get('groqKey', ''),
   };
 });
 

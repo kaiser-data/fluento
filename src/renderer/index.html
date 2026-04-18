@@ -52,6 +52,16 @@
       <button class="lang-btn" data-lang="ja" title="日本語 (bald)">🇯🇵</button>
     </div>
 
+    <!-- Practice Mission -->
+    <div id="mission-card">
+      <div>
+        <span id="mission-kicker">Mission</span>
+        <h2 id="mission-title">Morgen-Check</h2>
+        <p id="mission-prompt">Sag in 1-2 Sätzen, was du heute Morgen gemacht hast.</p>
+      </div>
+      <button id="btn-start-mission">Start</button>
+    </div>
+
     <!-- Speech Bubble -->
     <div id="speech-bubble" class="hidden">
       <p id="bubble-text"></p>
@@ -59,6 +69,12 @@
 
     <!-- Chat Log -->
     <div id="chat-log"></div>
+
+    <!-- Correction Highlight -->
+    <div id="correction-card" class="hidden">
+      <span>Besser gesagt</span>
+      <p id="correction-text"></p>
+    </div>
 
     <!-- Action Bar -->
     <div id="action-bar">
@@ -87,6 +103,11 @@
       <span id="status-text">Bereit</span>
     </div>
 
+    <div id="mission-complete" class="hidden">
+      <strong>Mission geschafft</strong>
+      <span>Weiter so</span>
+    </div>
+
     <!-- Settings Panel -->
     <div id="settings-panel" class="hidden">
       <h3>Einstellungen</h3>
@@ -94,6 +115,8 @@
       <input type="text" id="input-obsidian" placeholder="/Users/…/Obsidian" autocomplete="off" />
       <label for="input-apikey">CambAI Key (TTS)</label>
       <input type="password" id="input-apikey" placeholder="y5370939f-…" />
+      <label for="input-groqkey">Remote STT Key (optional)</label>
+      <input type="password" id="input-groqkey" placeholder="Only needed for remote fallback" />
       <button id="btn-save-settings">Speichern ✓</button>
     </div>
 

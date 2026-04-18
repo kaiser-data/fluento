@@ -13,7 +13,9 @@ body {
 }
 
 #app {
-  width: 290px;
+  width: 420px;
+  min-height: 700px;
+  position: relative;
   background: rgba(245, 247, 255, 0.95);
   border-radius: 22px;
   box-shadow: 0 12px 40px rgba(26, 35, 126, 0.18), 0 2px 8px rgba(0,0,0,0.08);
@@ -388,6 +390,71 @@ body {
 .lang-btn.active { opacity: 1; border-color: #5C6BC0; background: rgba(92,107,192,0.1); }
 .lang-btn:not(.active) { filter: grayscale(0.4); }
 
+/* ─── Practice Mission ─── */
+#mission-card {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  background: linear-gradient(135deg, #FFFFFF, #EEF2FF);
+  border: 1.5px solid #C5CAE9;
+  border-left: 5px solid #3949AB;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 8px 18px rgba(26, 35, 126, 0.1);
+}
+
+#mission-card.active {
+  border-left-color: #2E7D32;
+  background: linear-gradient(135deg, #FFFFFF, #E8F5E9);
+}
+
+#mission-kicker {
+  display: block;
+  color: #7986CB;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+#mission-title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.15;
+  color: #1A237E;
+}
+
+#mission-prompt {
+  margin: 4px 0 0;
+  color: #5C6BC0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+#btn-start-mission {
+  border: none;
+  border-radius: 8px;
+  background: #3949AB;
+  color: white;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 10px 13px;
+  transition: all 0.15s;
+}
+
+#btn-start-mission:hover {
+  background: #1A237E;
+  transform: translateY(-1px);
+}
+
+#mission-card.active #btn-start-mission {
+  background: #2E7D32;
+}
+
 /* ─── Speech Bubble ─── */
 #speech-bubble {
   position: relative;
@@ -428,7 +495,8 @@ body {
 /* ─── Chat Log ─── */
 #chat-log {
   width: 100%;
-  max-height: 110px;
+  min-height: 160px;
+  max-height: 230px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -455,6 +523,41 @@ body {
 
 @keyframes msg-in {
   from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Correction Highlight ─── */
+#correction-card {
+  width: 100%;
+  background: #FFF8E1;
+  border: 1.5px solid #FFCC80;
+  border-left: 5px solid #F57C00;
+  border-radius: 8px;
+  padding: 10px 12px;
+  animation: correction-in 0.22s ease-out;
+}
+
+#correction-card span {
+  display: block;
+  color: #B26A00;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+#correction-card p {
+  margin: 0;
+  color: #4E342E;
+  font-size: 14px;
+  line-height: 1.35;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+@keyframes correction-in {
+  from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -595,6 +698,41 @@ body {
   font-size: 11px;
   color: #9FA8DA;
   letter-spacing: 0.2px;
+}
+
+#mission-complete {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: min(310px, calc(100% - 40px));
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  background: #FFFFFF;
+  border: 2px solid #66BB6A;
+  border-radius: 8px;
+  box-shadow: 0 18px 45px rgba(27, 94, 32, 0.24);
+  padding: 18px;
+  text-align: center;
+  animation: mission-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#mission-complete strong {
+  display: block;
+  color: #1B5E20;
+  font-size: 24px;
+  line-height: 1.1;
+  margin-bottom: 5px;
+}
+
+#mission-complete span {
+  color: #2E7D32;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@keyframes mission-pop {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 /* ─── Settings Panel ─── */

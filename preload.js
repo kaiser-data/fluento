@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('fluentoo', {
-  sendMessage: (text) => ipcRenderer.invoke('send-message', text),
+  sendMessage: (payload) => ipcRenderer.invoke('send-message', payload),
   transcribeAudio: (uint8Array) => ipcRenderer.invoke('transcribe-audio', uint8Array),
   synthesizeSpeech: (text) => ipcRenderer.invoke('synthesize-speech', text),
   saveSettings: (s) => ipcRenderer.invoke('save-settings', s),

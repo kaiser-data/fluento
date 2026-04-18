@@ -1,7 +1,13 @@
 // ─── State ───────────────────────────────────────────────
 const state = {
   isListening: false,
-  recognition: null,
+  isTranscribing: false,
+  mediaRecorder: null,
+  mediaStream: null,
+  audioChunks: [],
+  recordingStartedAt: 0,
+  activeMission: null,
+  missionCompleted: false,
 };
 
 // ─── Elements ────────────────────────────────────────────
@@ -18,6 +24,14 @@ const statusText    = document.getElementById('status-text');
 const settingsPanel = document.getElementById('settings-panel');
 const inputObsidian = document.getElementById('input-obsidian');
 const inputApiKey   = document.getElementById('input-apikey');
+const inputGroqKey  = document.getElementById('input-groqkey');
+const missionCard   = document.getElementById('mission-card');
+const missionTitle  = document.getElementById('mission-title');
+const missionPrompt = document.getElementById('mission-prompt');
+const btnStartMission = document.getElementById('btn-start-mission');
+const correctionCard = document.getElementById('correction-card');
+const correctionText = document.getElementById('correction-text');
+const missionComplete = document.getElementById('mission-complete');
 const stageName     = document.getElementById('stage-name');
 const streakDisplay = document.getElementById('streak-display');
 const pointsDisplay = document.getElementById('points-display');
@@ -47,11 +61,148 @@ function setPetState(s) {
   if (s) pet.classList.add(s);
 }
 
+function stripEmojiForTTS(text) {
+  return text
+    .replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu, '')
+    .replace(/\s+([.,!?;:])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 function disableInput(on) {
   btnTalk.disabled = on;
   btnType.disabled  = on;
   btnSend.disabled  = on;
+  btnStartMission.disabled = on;
   textInput.disabled = on;
+}
+
+function resetTalkButton() {
+  btnTalk.classList.remove('recording');
+  btnTalk.querySelector('.btn-label').textContent = 'Sprechen';
+}
+
+// ─── Practice Missions ───────────────────────────────────
+const MISSIONS = [
+  {
+    title: 'Morgen-Check',
+    prompt: 'Sag in 1-2 Sätzen, was du heute Morgen gemacht hast.',
+    hint: 'Der Nutzer macht eine kurze Sprechübung über seinen Morgen. Korrigiere sanft und antworte kurz.',
+    validate: text => /morgen|heute|früh|aufgestanden|gefrühstückt|kaffee|tee|arbeit|schule|geduscht|gemacht/i.test(text),
+  },
+  {
+    title: 'Restaurant',
+    prompt: 'Bestelle ein Getränk und etwas zu essen auf Deutsch.',
+    hint: 'Der Nutzer übt eine Restaurantsituation. Hilf mit natürlichem Deutsch für eine Bestellung.',
+    validate: text => /möchte|hätte|nehme|bestelle|bitte|wasser|kaffee|tee|essen|pizza|salat|suppe|nudeln|rechnung/i.test(text),
+  },
+  {
+    title: 'Wochenende',
+    prompt: 'Sag, was du am Wochenende machen möchtest.',
+    hint: 'Der Nutzer übt Zukunftspläne. Achte besonders auf Wortstellung und Modalverben.',
+    validate: text => /wochenende|samstag|sonntag|werde|möchte|will|gehe|mache|besuche|plane/i.test(text),
+  },
+  {
+    title: 'Mini-Story',
+    prompt: 'Erzähl kurz von einem schönen Moment diese Woche.',
+    hint: 'Der Nutzer übt eine kurze persönliche Geschichte. Korrigiere nur die wichtigste Sache.',
+    validate: text => text.trim().split(/\s+/).length >= 5,
+  },
+];
+
+function getTodaysMission() {
+  const index = new Date().getDate() % MISSIONS.length;
+  return MISSIONS[index];
+}
+
+function renderMission(mission) {
+  missionTitle.textContent = mission.title;
+  missionPrompt.textContent = mission.prompt;
+}
+
+function startMission() {
+  state.activeMission = getTodaysMission();
+  state.missionCompleted = false;
+  missionCard.classList.add('active');
+  btnStartMission.textContent = 'Aktiv';
+  showBubble(state.activeMission.prompt, 6500);
+  setEmotion('excited');
+  setStatus('Mission aktiv');
+}
+
+function buildMissionInstruction() {
+  if (!state.activeMission) return '';
+
+  return [
+    state.activeMission.hint,
+    `Mission: ${state.activeMission.prompt}`,
+    'Prüfe, ob die Nutzerantwort die Mission wirklich erfüllt.',
+    'Wenn die Mission erfüllt ist, schreibe am Ende in einer eigenen Zeile exakt: MISSION_RESULT: PASS',
+    'Wenn die Mission nicht erfüllt ist oder der Nutzer am Thema vorbeiredet, schreibe am Ende in einer eigenen Zeile exakt: MISSION_RESULT: FAIL',
+    'Wenn der Nutzer einen Fehler macht, nutze genau diese Form: "Man sagt besser: ..."',
+    'Wenn die Mission nicht erfüllt ist, ermutige kurz und sage konkret, was der Nutzer nochmal sagen soll.',
+    'Antworte mit maximal 2 kurzen Sätzen.',
+    'Keine Emojis.',
+  ].join('\n');
+}
+
+function parseMissionResponse(text) {
+  const match = text.match(/MISSION_RESULT:\s*(PASS|FAIL)\s*$/im);
+  return {
+    passed: match ? match[1].toUpperCase() === 'PASS' : null,
+    text: text
+      .replace(/MISSION_RESULT:\s*(PASS|FAIL)\s*$/gim, '')
+      .trim(),
+  };
+}
+
+function missionPassedLocally(userText) {
+  if (!state.activeMission?.validate) return userText.trim().split(/\s+/).length >= 4;
+  return state.activeMission.validate(userText);
+}
+
+function extractCorrection(text) {
+  const match = text.match(/Man sagt besser:\s*([^\n]+)/i);
+  if (!match) return '';
+  return match[1].replace(/^["“]|["”]$/g, '').trim();
+}
+
+function showCorrection(text) {
+  const correction = extractCorrection(text);
+  if (!correction) {
+    correctionCard.classList.add('hidden');
+    correctionText.textContent = '';
+    return;
+  }
+
+  correctionText.textContent = correction;
+  correctionCard.classList.remove('hidden');
+}
+
+function completeMission() {
+  if (!state.activeMission || state.missionCompleted) return;
+
+  state.missionCompleted = true;
+  state.activeMission = null;
+  missionCard.classList.remove('active');
+  btnStartMission.textContent = 'Start';
+  missionComplete.classList.remove('hidden');
+  setEmotion('laugh');
+
+  setTimeout(() => {
+    missionComplete.classList.add('hidden');
+  }, 2200);
+}
+
+function failMission() {
+  if (!state.activeMission) return;
+
+  state.missionCompleted = false;
+  missionCard.classList.add('active');
+  btnStartMission.textContent = 'Nochmal';
+  setEmotion('sad');
+  showBubble('Noch nicht ganz. Versuch die Mission nochmal.', 3800);
+  setStatus('Mission nochmal versuchen');
 }
 
 // ─── Emotion engine ───────────────────────────────────────
@@ -230,22 +381,36 @@ async function awardPoints(emotion) {
 async function processMessage(userText) {
   if (!userText.trim()) return;
 
+  const instruction = buildMissionInstruction();
+
   addMessage('user', userText);
   setPetState('thinking');
   setStatus('Nachdenken…');
   disableInput(true);
 
   try {
-    const response = await window.fluentoo.sendMessage(userText);
+    const rawResponse = await window.fluentoo.sendMessage({ text: userText, instruction });
+    const missionResult = instruction ? parseMissionResponse(rawResponse) : { passed: null, text: rawResponse };
+    if (instruction && missionResult.passed === null) {
+      missionResult.passed = missionPassedLocally(userText);
+    }
+    const response = missionResult.text || rawResponse;
+
     addMessage('assistant', response);
+    showCorrection(response);
     showBubble(response, 7000);
 
     const emotion = analyzeEmotion(response);
     setEmotion(emotion);
     await awardPoints(emotion);
+    if (instruction && missionResult.passed === true) {
+      completeMission();
+    } else if (instruction && missionResult.passed === false) {
+      failMission();
+    }
 
     setStatus('Sprechen…');
-    await playTTS(response);
+    await playTTS(stripEmojiForTTS(response) || response);
   } catch (err) {
     console.error('LLM error:', err);
     addMessage('system', '⚠ ' + (err.message || 'Verbindungsfehler'));
@@ -282,73 +447,125 @@ async function playTTS(text) {
   }
 }
 
-// ─── STT: Web Speech API ──────────────────────────────────
+// ─── STT: microphone recording → local Whisper ────────────
+function getRecorderOptions() {
+  const types = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+  ];
+
+  const mimeType = types.find(type => MediaRecorder.isTypeSupported(type));
+  return mimeType ? { mimeType } : {};
+}
+
+function stopMediaStream() {
+  if (!state.mediaStream) return;
+  state.mediaStream.getTracks().forEach(track => track.stop());
+  state.mediaStream = null;
+}
+
 async function startListening() {
-  // Trigger macOS mic permission dialog via getUserMedia first
+  if (state.isListening || state.isTranscribing) return;
+
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    textInputArea.classList.remove('hidden');
+    textInput.focus();
+    addMessage('system', '🎙 Sprachaufnahme ist hier nicht verfügbar — bitte tippe deinen Text.');
+    setStatus('Bitte tippe deinen Text ✍');
+    return;
+  }
+
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(t => t.stop());
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+
+    const recorder = new MediaRecorder(stream, getRecorderOptions());
+
+    state.mediaStream = stream;
+    state.mediaRecorder = recorder;
+    state.audioChunks = [];
+    state.recordingStartedAt = Date.now();
+    state.isListening = true;
+
+    recorder.addEventListener('dataavailable', (event) => {
+      if (event.data.size > 0) state.audioChunks.push(event.data);
+    });
+
+    recorder.addEventListener('error', (event) => {
+      console.error('Recording error:', event.error);
+      addMessage('system', '🎙 Aufnahmefehler — bitte nochmal versuchen.');
+      stopListening();
+    });
+
+    recorder.addEventListener('stop', transcribeRecording);
+    recorder.start();
   } catch (err) {
+    console.error('Microphone error:', err);
     addMessage('system', '🎙 Mikrofon-Zugriff verweigert — Systemeinstellungen > Datenschutz > Mikrofon aktivieren');
     setStatus('Kein Mikrofon-Zugriff');
     return;
   }
 
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    textInputArea.classList.remove('hidden');
-    textInput.focus();
-    setStatus('Bitte tippe deinen Text ✍');
-    return;
-  }
-
-  const rec = new SR();
-  rec.lang = 'de-DE';
-  rec.continuous = false;
-  rec.interimResults = false;
-  state.recognition = rec;
-  state.isListening = true;
-
   btnTalk.classList.add('recording');
   btnTalk.querySelector('.btn-label').textContent = 'Stopp';
   setPetState('listening');
   setStatus('Höre zu… 👂');
+}
 
-  rec.onresult = (e) => {
-    const text = Array.from(e.results)
-      .map(r => r[0].transcript)
-      .join(' ')
-      .trim();
-    if (text) processMessage(text);
-  };
+async function transcribeRecording() {
+  const chunks = state.audioChunks;
+  const durationMs = Date.now() - state.recordingStartedAt;
 
-  rec.onerror = (e) => {
-    console.error('STT error:', e.error);
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      addMessage('system', '🎙 Mikrofon-Zugriff verweigert — Systemeinstellungen > Datenschutz > Mikrofon');
-    } else if (e.error === 'no-speech') {
+  state.isListening = false;
+  state.isTranscribing = true;
+  state.mediaRecorder = null;
+  state.audioChunks = [];
+  stopMediaStream();
+  resetTalkButton();
+  disableInput(true);
+  setPetState('thinking');
+  setStatus('Transkribiere…');
+
+  try {
+    if (!chunks.length || durationMs < 350) {
       setStatus('Nicht gehört — nochmal versuchen');
-    } else if (e.error === 'network') {
-      setStatus('Netzwerkfehler — tippe stattdessen');
-      textInputArea.classList.remove('hidden');
-    } else {
-      setStatus(`STT Fehler: ${e.error}`);
+      return;
     }
-  };
 
-  rec.onend = () => {
-    state.isListening = false;
-    btnTalk.classList.remove('recording');
-    btnTalk.querySelector('.btn-label').textContent = 'Sprechen';
+    const type = chunks[0].type || 'audio/webm';
+    const blob = new Blob(chunks, { type });
+    const audioBytes = new Uint8Array(await blob.arrayBuffer());
+    const text = await window.fluentoo.transcribeAudio(audioBytes);
+
+    if (!text) {
+      addMessage('system', '🎙 Keine Transkription erhalten — lokales STT prüfen oder nochmal sprechen.');
+      setStatus('Nicht verstanden');
+      return;
+    }
+
+    await processMessage(text);
+  } catch (err) {
+    console.error('STT error:', err);
+    addMessage('system', '🎙 STT Fehler — bitte nochmal versuchen oder Text eingeben.');
+    setStatus('STT Fehler');
+  } finally {
+    state.isTranscribing = false;
     setPetState(null);
-    setStatus('Bereit');
-  };
-
-  rec.start();
+    disableInput(false);
+    if (!state.isListening) setStatus('Bereit');
+  }
 }
 
 function stopListening() {
-  if (state.recognition) state.recognition.stop();
+  if (!state.mediaRecorder || state.mediaRecorder.state === 'inactive') return;
+  state.mediaRecorder.stop();
+  setStatus('Transkribiere…');
 }
 
 // ─── Talk button ─────────────────────────────────────────
@@ -375,6 +592,7 @@ function sendText() {
 
 btnSend.addEventListener('click', sendText);
 textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendText(); });
+btnStartMission.addEventListener('click', startMission);
 
 // ─── Language selector ────────────────────────────────────
 const LANG_CONFIG = {
@@ -452,6 +670,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   await window.fluentoo.saveSettings({
     obsidianPath: inputObsidian.value.trim(),
     apiKey: inputApiKey.value.trim(),
+    groqKey: inputGroqKey.value.trim(),
   });
   settingsPanel.classList.add('hidden');
   showBubble('Einstellungen gespeichert!');
@@ -465,6 +684,8 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   ]);
 
   inputObsidian.value = settings.obsidianPath || '';
+  inputApiKey.value = settings.apiKey || '';
+  inputGroqKey.value = settings.groqKey || '';
   progress = savedProgress;
 
   // Check for missed day on launch
@@ -474,6 +695,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   }
 
   updateProgressUI();
+  renderMission(getTodaysMission());
 
   setTimeout(() => {
     showBubble('Hallo! Ich bin Fluentoo — lass uns Deutsch üben! 🇩🇪', 5000);
