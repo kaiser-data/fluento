@@ -25,16 +25,21 @@ const settingsPanel = document.getElementById('settings-panel');
 const inputObsidian = document.getElementById('input-obsidian');
 const inputApiKey   = document.getElementById('input-apikey');
 const inputGroqKey  = document.getElementById('input-groqkey');
-const missionCard   = document.getElementById('mission-card');
-const missionTitle  = document.getElementById('mission-title');
-const missionPrompt = document.getElementById('mission-prompt');
+const missionCard    = document.getElementById('mission-card');
+const missionChoices = document.getElementById('mission-choices');
+const missionActive  = document.getElementById('mission-active');
+const missionTitle   = document.getElementById('mission-title');
+const missionPrompt  = document.getElementById('mission-prompt');
 const btnStartMission = document.getElementById('btn-start-mission');
 const correctionCard = document.getElementById('correction-card');
 const correctionText = document.getElementById('correction-text');
 const missionComplete = document.getElementById('mission-complete');
-const stageName     = document.getElementById('stage-name');
-const streakDisplay = document.getElementById('streak-display');
-const pointsDisplay = document.getElementById('points-display');
+const progressPanel = document.getElementById('progress-panel');
+const xpBarFill     = document.getElementById('xp-bar-fill');
+const xpCount       = document.getElementById('xp-count');
+const stageLabel    = document.getElementById('stage-label');
+const streakBadge   = document.getElementById('streak-badge');
+const streakVal     = document.getElementById('streak-val');
 
 // ─── UI helpers ──────────────────────────────────────────
 let bubbleTimer;
@@ -73,8 +78,8 @@ function disableInput(on) {
   btnTalk.disabled = on;
   btnType.disabled  = on;
   btnSend.disabled  = on;
-  btnStartMission.disabled = on;
   textInput.disabled = on;
+  document.querySelectorAll('.mission-choice-btn').forEach(b => b.disabled = on);
 }
 
 function resetTalkButton() {
@@ -83,49 +88,69 @@ function resetTalkButton() {
 }
 
 // ─── Practice Missions ───────────────────────────────────
+// Any genuine attempt (3+ words) counts as a local pass — the LLM handles nuance
+const attempted = text => text.trim().split(/\s+/).length >= 3;
+
 const MISSIONS = [
   {
     title: 'Morgen-Check',
     prompt: 'Sag in 1-2 Sätzen, was du heute Morgen gemacht hast.',
     hint: 'Der Nutzer macht eine kurze Sprechübung über seinen Morgen. Korrigiere sanft und antworte kurz.',
-    validate: text => /morgen|heute|früh|aufgestanden|gefrühstückt|kaffee|tee|arbeit|schule|geduscht|gemacht/i.test(text),
+    validate: attempted,
   },
   {
     title: 'Restaurant',
     prompt: 'Bestelle ein Getränk und etwas zu essen auf Deutsch.',
     hint: 'Der Nutzer übt eine Restaurantsituation. Hilf mit natürlichem Deutsch für eine Bestellung.',
-    validate: text => /möchte|hätte|nehme|bestelle|bitte|wasser|kaffee|tee|essen|pizza|salat|suppe|nudeln|rechnung/i.test(text),
+    validate: attempted,
   },
   {
     title: 'Wochenende',
     prompt: 'Sag, was du am Wochenende machen möchtest.',
     hint: 'Der Nutzer übt Zukunftspläne. Achte besonders auf Wortstellung und Modalverben.',
-    validate: text => /wochenende|samstag|sonntag|werde|möchte|will|gehe|mache|besuche|plane/i.test(text),
+    validate: attempted,
   },
   {
     title: 'Mini-Story',
     prompt: 'Erzähl kurz von einem schönen Moment diese Woche.',
     hint: 'Der Nutzer übt eine kurze persönliche Geschichte. Korrigiere nur die wichtigste Sache.',
-    validate: text => text.trim().split(/\s+/).length >= 5,
+    validate: attempted,
   },
 ];
 
-function getTodaysMission() {
-  const index = new Date().getDate() % MISSIONS.length;
-  return MISSIONS[index];
+function getDailyChoices() {
+  // Deterministically pick 3 missions based on today's date, no repeats
+  const seed = new Date().getDate();
+  const picks = [];
+  for (let i = 0; picks.length < 3; i++) {
+    const idx = (seed + i) % MISSIONS.length;
+    if (!picks.includes(idx)) picks.push(idx);
+  }
+  return picks.map(i => MISSIONS[i]);
 }
 
-function renderMission(mission) {
-  missionTitle.textContent = mission.title;
-  missionPrompt.textContent = mission.prompt;
+function renderMissionChoices() {
+  missionChoices.innerHTML = '';
+  missionActive.classList.add('hidden');
+  const choices = getDailyChoices();
+  choices.forEach(mission => {
+    const btn = document.createElement('button');
+    btn.className = 'mission-choice-btn';
+    btn.textContent = mission.title;
+    btn.addEventListener('click', () => startMission(mission));
+    missionChoices.appendChild(btn);
+  });
 }
 
-function startMission() {
-  state.activeMission = getTodaysMission();
+function startMission(mission) {
+  state.activeMission = mission;
   state.missionCompleted = false;
   missionCard.classList.add('active');
-  btnStartMission.textContent = 'Aktiv';
-  showBubble(state.activeMission.prompt, 6500);
+  missionChoices.classList.add('hidden');
+  missionActive.classList.remove('hidden');
+  missionTitle.textContent = mission.title;
+  missionPrompt.textContent = mission.prompt;
+  showBubble(mission.prompt, 6500);
   setEmotion('excited');
   setStatus('Mission aktiv');
 }
@@ -136,12 +161,12 @@ function buildMissionInstruction() {
   return [
     state.activeMission.hint,
     `Mission: ${state.activeMission.prompt}`,
-    'Prüfe, ob die Nutzerantwort die Mission wirklich erfüllt.',
-    'Wenn die Mission erfüllt ist, schreibe am Ende in einer eigenen Zeile exakt: MISSION_RESULT: PASS',
-    'Wenn die Mission nicht erfüllt ist oder der Nutzer am Thema vorbeiredet, schreibe am Ende in einer eigenen Zeile exakt: MISSION_RESULT: FAIL',
-    'Wenn der Nutzer einen Fehler macht, nutze genau diese Form: "Man sagt besser: ..."',
-    'Wenn die Mission nicht erfüllt ist, ermutige kurz und sage konkret, was der Nutzer nochmal sagen soll.',
-    'Antworte mit maximal 2 kurzen Sätzen.',
+    'Bewerte grosszuegig: Wenn der Nutzer irgendwie versucht hat, die Mission zu erfuellen — auch mit Fehlern oder einfachem Deutsch — gilt das als Erfolg.',
+    'MISSION_RESULT: PASS wenn der Nutzer einen echten Versuch gemacht hat, das Thema anzusprechen.',
+    'MISSION_RESULT: FAIL nur wenn der Nutzer komplett am Thema vorbei redet oder gar nichts Relevantes sagt.',
+    'Schreibe am Ende exakt eine dieser Zeilen: MISSION_RESULT: PASS oder MISSION_RESULT: FAIL',
+    'Wenn der Nutzer einen Grammatikfehler macht, nutze diese Form: "Man sagt besser: ..."',
+    'Antworte ermutigend in maximal 2 kurzen Saetzen.',
     'Keine Emojis.',
   ].join('\n');
 }
@@ -185,7 +210,8 @@ function completeMission() {
   state.missionCompleted = true;
   state.activeMission = null;
   missionCard.classList.remove('active');
-  btnStartMission.textContent = 'Start';
+  missionChoices.classList.remove('hidden');
+  renderMissionChoices();
   missionComplete.classList.remove('hidden');
   setEmotion('laugh');
 
@@ -199,7 +225,6 @@ function failMission() {
 
   state.missionCompleted = false;
   missionCard.classList.add('active');
-  btnStartMission.textContent = 'Nochmal';
   setEmotion('sad');
   showBubble('Noch nicht ganz. Versuch die Mission nochmal.', 3800);
   setStatus('Mission nochmal versuchen');
@@ -321,25 +346,68 @@ function prevDayStr(dateStr) {
   return d.toISOString().slice(0, 10);
 }
 
-function getStage(pts) {
+const STAGE_COLORS = ['#7C4DFF', '#F44336', '#FFB300', '#43A047', '#FF4081'];
+
+function getStageIndex(pts) {
   for (let i = STAGES.length - 1; i >= 0; i--) {
-    if (pts >= STAGES[i].min) return STAGES[i];
+    if (pts >= STAGES[i].min) return i;
   }
-  return STAGES[0];
+  return 0;
+}
+
+function getStage(pts) { return STAGES[getStageIndex(pts)]; }
+
+function getXPFill(pts, idx) {
+  if (idx >= STAGES.length - 1) return 100;
+  const from = STAGES[idx].min;
+  const to   = STAGES[idx + 1].min;
+  return Math.min(100, Math.round((pts - from) / (to - from) * 100));
+}
+
+function triggerLevelUpAnim(idx) {
+  const node = document.querySelector(`.snode[data-i="${idx}"]`);
+  if (!node) return;
+  node.classList.add('levelup');
+  setTimeout(() => node.classList.remove('levelup'), 800);
 }
 
 function updateProgressUI() {
-  const stage = getStage(progress.points);
-  stageName.textContent = stage.name;
-  pointsDisplay.textContent = `${progress.points} pts`;
-  streakDisplay.textContent = progress.streak >= 3 ? `🔥 ${progress.streak}` :
-                               progress.streak > 0  ? `×${progress.streak}` : '';
+  const idx   = getStageIndex(progress.points);
+  const color = STAGE_COLORS[idx];
+  const fill  = getXPFill(progress.points, idx);
+
+  progressPanel.style.setProperty('--sc-active', color);
+
+  document.querySelectorAll('.snode').forEach(node => {
+    const i = parseInt(node.dataset.i);
+    const c = STAGE_COLORS[i];
+    node.style.setProperty('--sc', c);
+    node.classList.remove('done', 'active');
+    if (i < idx)      node.classList.add('done');
+    else if (i === idx) node.classList.add('active');
+  });
+
+  document.querySelectorAll('.sconnector').forEach(conn => {
+    const i = parseInt(conn.dataset.i);
+    conn.style.setProperty('--sc', STAGE_COLORS[i]);
+    conn.classList.toggle('done', i < idx);
+  });
+
+  xpBarFill.style.width = `${fill}%`;
+  xpCount.textContent   = `${progress.points} XP`;
+  stageLabel.textContent = STAGES[idx].name.replace(/^\S+\s/, '').toUpperCase();
+
+  if (progress.streak >= 2) {
+    streakVal.textContent = `🔥 ${progress.streak}x`;
+    streakBadge.classList.remove('hidden');
+  } else {
+    streakBadge.classList.add('hidden');
+  }
 }
 
 async function awardPoints(emotion) {
   const today = todayStr();
   const pts   = POINTS_MAP[emotion] || 3;
-  const prev  = getStage(progress.points);
 
   if (!progress.lastDate) {
     progress.streak = 1;
@@ -358,10 +426,11 @@ async function awardPoints(emotion) {
   progress.points   += pts;
   progress.lastDate  = today;
 
-  const next = getStage(progress.points);
-  if (next.min > prev.min) {
-    // Stage up!
-    showBubble(`Neues Level: ${next.name}! 🎊 Weiter so!`, 6000);
+  const nextIdx = getStageIndex(progress.points);
+  const prevIdx = getStageIndex(progress.points - pts);
+  if (nextIdx > prevIdx) {
+    triggerLevelUpAnim(nextIdx);
+    showBubble(`Neues Level: ${STAGES[nextIdx].name}! Weiter so!`, 6000);
     setEmotion('laugh');
   } else if (emotion === 'laugh') {
     showBubble('Super! 🎯', 3000);
@@ -592,7 +661,16 @@ function sendText() {
 
 btnSend.addEventListener('click', sendText);
 textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendText(); });
-btnStartMission.addEventListener('click', startMission);
+btnStartMission.addEventListener('click', () => {
+  // Cancel active mission → back to choices
+  state.activeMission = null;
+  state.missionCompleted = false;
+  missionCard.classList.remove('active');
+  missionChoices.classList.remove('hidden');
+  missionActive.classList.add('hidden');
+  correctionCard.classList.add('hidden');
+  setStatus('Bereit');
+});
 
 // ─── Language selector ────────────────────────────────────
 const LANG_CONFIG = {
@@ -695,7 +773,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   }
 
   updateProgressUI();
-  renderMission(getTodaysMission());
+  renderMissionChoices();
 
   setTimeout(() => {
     showBubble('Hallo! Ich bin Fluentoo — lass uns Deutsch üben! 🇩🇪', 5000);

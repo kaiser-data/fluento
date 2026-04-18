@@ -52,14 +52,15 @@
       <button class="lang-btn" data-lang="ja" title="日本語 (bald)">🇯🇵</button>
     </div>
 
-    <!-- Practice Mission -->
+    <!-- Daily Mission -->
     <div id="mission-card">
-      <div>
-        <span id="mission-kicker">Mission</span>
-        <h2 id="mission-title">Morgen-Check</h2>
-        <p id="mission-prompt">Sag in 1-2 Sätzen, was du heute Morgen gemacht hast.</p>
+      <span id="mission-kicker">Tages-Mission</span>
+      <div id="mission-choices"></div>
+      <div id="mission-active" class="hidden">
+        <h2 id="mission-title"></h2>
+        <p id="mission-prompt"></p>
+        <button id="btn-start-mission">Abbrechen</button>
       </div>
-      <button id="btn-start-mission">Start</button>
     </div>
 
     <!-- Speech Bubble -->
@@ -91,11 +92,27 @@
       <button id="btn-send">→</button>
     </div>
 
-    <!-- Progress Strip -->
-    <div id="progress-strip">
-      <span id="stage-name">🌱 Schüchtern</span>
-      <span id="streak-display"></span>
-      <span id="points-display">0 pts</span>
+    <!-- Progress Panel -->
+    <div id="progress-panel">
+      <div id="progress-top">
+        <div id="stage-track">
+          <div class="snode" data-i="0"><div class="snode-dot"></div><span class="snode-emoji">🌱</span></div>
+          <div class="sconnector" data-i="0"></div>
+          <div class="snode" data-i="1"><div class="snode-dot"></div><span class="snode-emoji">🌿</span></div>
+          <div class="sconnector" data-i="1"></div>
+          <div class="snode" data-i="2"><div class="snode-dot"></div><span class="snode-emoji">🌊</span></div>
+          <div class="sconnector" data-i="2"></div>
+          <div class="snode" data-i="3"><div class="snode-dot"></div><span class="snode-emoji">🔥</span></div>
+          <div class="sconnector" data-i="3"></div>
+          <div class="snode" data-i="4"><div class="snode-dot"></div><span class="snode-emoji">🚀</span></div>
+        </div>
+        <div id="streak-badge" class="hidden"><span id="streak-val">🔥 2x</span></div>
+      </div>
+      <div id="xp-bar-wrap"><div id="xp-bar-fill"></div></div>
+      <div id="xp-meta">
+        <span id="stage-label">Schüchtern</span>
+        <span id="xp-count">0 XP</span>
+      </div>
     </div>
 
     <!-- Status -->
