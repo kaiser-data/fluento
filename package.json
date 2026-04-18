@@ -1,0 +1,18 @@
+{
+  "name": "fluentoo",
+  "version": "1.0.0",
+  "description": "AI German language learning desktop companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "NODE_ENV=development electron ."
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "electron-store": "^8.2.0",
+    "openai": "^4.52.0"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fluentoo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Emoji particles live outside #app so they aren't clipped -->
+  <div id="emoji-particles"></div>
+
+  <div id="app">
+
+    <div id="top-bar">
+      <span id="app-name">fluentoo</span>
+      <div id="controls">
+        <button id="btn-settings" title="Einstellungen">⚙</button>
+        <button id="btn-close" title="Schließen">✕</button>
+      </div>
+    </div>
+
+    <!-- Alien Companion -->
+    <div id="pet-container">
+      <div id="pet">
+        <div class="alien-antennae">
+          <div class="antenna left"><div class="antenna-tip"></div></div>
+          <div class="antenna right"><div class="antenna-tip"></div></div>
+        </div>
+        <div class="alien-head">
+          <div class="alien-eyes">
+            <div class="alien-eye">
+              <div class="alien-pupil"><div class="alien-highlight"></div></div>
+            </div>
+            <div class="alien-eye">
+              <div class="alien-pupil"><div class="alien-highlight"></div></div>
+            </div>
+          </div>
+          <div class="alien-mouth"></div>
+        </div>
+      </div>
+      <div id="pet-shadow"></div>
+    </div>
+
+    <!-- Language Selector -->
+    <div id="lang-selector">
+      <button class="lang-btn active" data-lang="de" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="es" title="Español (bald)">🇪🇸</button>
+      <button class="lang-btn" data-lang="fr" title="Français (bald)">🇫🇷</button>
+      <button class="lang-btn" data-lang="it" title="Italiano (bald)">🇮🇹</button>
+      <button class="lang-btn" data-lang="ja" title="日本語 (bald)">🇯🇵</button>
+    </div>
+
+    <!-- Speech Bubble -->
+    <div id="speech-bubble" class="hidden">
+      <p id="bubble-text"></p>
+    </div>
+
+    <!-- Chat Log -->
+    <div id="chat-log"></div>
+
+    <!-- Action Bar -->
+    <div id="action-bar">
+      <button id="btn-talk" class="btn-primary">
+        <span class="btn-icon">🎙</span>
+        <span class="btn-label">Sprechen</span>
+      </button>
+      <button id="btn-type" class="btn-secondary" title="Text eingeben">✍</button>
+    </div>
+
+    <!-- Text Input -->
+    <div id="text-input-area" class="hidden">
+      <input type="text" id="text-input" placeholder="Schreib auf Deutsch…" autocomplete="off" spellcheck="false" />
+      <button id="btn-send">→</button>
+    </div>
+
+    <!-- Progress Strip -->
+    <div id="progress-strip">
+      <span id="stage-name">🌱 Schüchtern</span>
+      <span id="streak-display"></span>
+      <span id="points-display">0 pts</span>
+    </div>
+
+    <!-- Status -->
+    <div id="status-bar">
+      <span id="status-text">Bereit</span>
+    </div>
+
+    <!-- Settings Panel -->
+    <div id="settings-panel" class="hidden">
+      <h3>Einstellungen</h3>
+      <label for="input-obsidian">Obsidian Vault Pfad</label>
+      <input type="text" id="input-obsidian" placeholder="/Users/…/Obsidian" autocomplete="off" />
+      <label for="input-apikey">CambAI Key (TTS)</label>
+      <input type="password" id="input-apikey" placeholder="y5370939f-…" />
+      <button id="btn-save-settings">Speichern ✓</button>
+    </div>
+
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
