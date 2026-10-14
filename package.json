@@ -1,11 +1,14 @@
 {
   "name": "fluentoo",
   "version": "1.0.0",
-  "description": "AI German language learning desktop companion",
+  "description": "Voice-first desktop companion for daily German speaking practice",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "NODE_ENV=development electron ."
+    "dev": "NODE_ENV=development electron .",
+    "check": "for f in main.js preload.js src/modules/*.js src/renderer/renderer.js; do node --check \"$f\" || exit 1; done && echo ok",
+    "site:deploy": "wrangler pages deploy site --project-name fluentoo --branch main",
+    "site:dev": "wrangler pages dev site"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.1.0",
@@ -15,6 +18,23 @@
     "wavefile": "^11.0.0"
   },
   "devDependencies": {
-    "electron": "^31.0.0"
-  }
+    "electron": "^31.0.0",
+    "wrangler": "^4.151.0"
+  },
+  "homepage": "https://fluentoo.pages.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaiser-data/fluento.git"
+  },
+  "author": "kaiser-data",
+  "license": "MIT",
+  "keywords": [
+    "electron",
+    "language-learning",
+    "german",
+    "voice",
+    "llm",
+    "speech-to-text",
+    "text-to-speech"
+  ]
 }

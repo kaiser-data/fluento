@@ -187,9 +187,11 @@ function missionPassedLocally(userText) {
 }
 
 function extractCorrection(text) {
-  const match = text.match(/Man sagt besser:\s*([^\n]+)/i);
+  // Prefer a quoted phrase; otherwise stop at the first sentence end so the
+  // follow-up question doesn't leak into the correction card.
+  const match = text.match(/Man sagt besser:\s*(?:["„“]([^"“”]+)["“”]|([^\n.!?]+[.!?]?))/i);
   if (!match) return '';
-  return match[1].replace(/^["“]|["”]$/g, '').trim();
+  return (match[1] || match[2]).trim();
 }
 
 function showCorrection(text) {

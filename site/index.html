@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluentoo — speak German every day</title>
+<meta name="description" content="Fluentoo is a voice-first desktop companion for daily German speaking practice: short missions, gentle corrections, and a character that reacts to how you're doing.">
+<meta property="og:title" content="Fluentoo — speak German every day">
+<meta property="og:description" content="A voice-first desktop companion for daily German speaking practice. Electron · LLM tutor · speech in, speech out.">
+<meta property="og:image" content="https://fluentoo.pages.dev/img/og.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/icon.png">
+<style>
+:root{
+  --ink:#17171F; --ink-2:#4B5563; --ink-3:#6B7280;
+  --paper:#FBFAF7; --panel:#FFFFFF; --line:#E7E5E0;
+  --yellow:#FFB300; --red:#F44336; --purple:#7C4DFF; --green:#43A047;
+  --accent:#7C4DFF;
+  --shadow:0 24px 60px rgba(23,23,31,.10),0 2px 8px rgba(23,23,31,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#F3F2EE; --ink-2:#C4C2BC; --ink-3:#9A988F;
+    --paper:#121218; --panel:#1B1B23; --line:#2C2C36;
+    --accent:#A58BFF;
+    --shadow:0 24px 60px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{
+  background:var(--paper); color:var(--ink);
+  font:17px/1.6 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+a{color:inherit}
+.wrap{width:min(1120px,100% - 32px);margin-inline:auto}
+
+/* nav */
+nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:19px;text-decoration:none}
+.brand img{width:30px;height:30px;border-radius:8px}
+.nav-links{display:flex;gap:22px;font-size:15px;color:var(--ink-2)}
+.nav-links a{text-decoration:none}
+.nav-links a:hover{color:var(--ink)}
+@media (max-width:640px){.nav-links .hide-sm{display:none}}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding:56px 0 88px}
+@media (max-width:880px){.hero{grid-template-columns:1fr;padding-top:24px;text-align:center}.hero .ctas{justify-content:center}.hero .kicker{margin-inline:auto}}
+.kicker{display:inline-flex;gap:8px;align-items:center;font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--panel)}
+.dots{display:inline-flex;gap:3px}
+.dots i{width:7px;height:7px;border-radius:50%;display:block}
+h1{font-size:clamp(44px,7vw,84px);line-height:.98;letter-spacing:-.045em;font-weight:850;margin:22px 0 22px}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--yellow),var(--red) 35%,var(--purple) 70%,var(--green));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(18px,2vw,21px);color:var(--ink-2);max-width:34ch}
+@media (max-width:880px){.lede{margin-inline:auto}}
+.ctas{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:14px;font-weight:650;text-decoration:none;font-size:16px;transition:transform .15s ease}
+.btn:hover{transform:translateY(-2px)}
+.btn-dark{background:var(--ink);color:var(--paper)}
+.btn-ghost{border:1px solid var(--line);background:var(--panel)}
+.btn svg{width:20px;height:20px;fill:currentColor}
+
+.stage{position:relative;display:grid;place-items:center;min-height:420px}
+.halo{position:absolute;width:min(420px,90vw);aspect-ratio:1;border-radius:50%;
+  background:conic-gradient(from 200deg,var(--yellow),var(--red),var(--purple),var(--green),var(--yellow));
+  filter:blur(60px);opacity:.45;animation:spin 18s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stage img{position:relative;width:min(340px,72vw);height:auto;animation:bob 4.5s ease-in-out infinite;mix-blend-mode:multiply}
+@media (prefers-color-scheme:dark){.stage img{mix-blend-mode:normal;border-radius:50%}}
+@keyframes bob{50%{transform:translateY(-12px) rotate(-1.5deg)}}
+@media (prefers-reduced-motion:reduce){.halo,.stage img{animation:none}}
+
+/* sections */
+section{padding:88px 0;border-top:1px solid var(--line)}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+h2{font-size:clamp(30px,4vw,46px);letter-spacing:-.035em;line-height:1.05;margin:10px 0 16px;font-weight:800}
+.sub{color:var(--ink-2);max-width:60ch}
+
+/* screens */
+.screens{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px;margin-top:48px;align-items:start}
+.screens figure{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}
+.screens img{display:block;width:100%;max-width:340px;height:auto;margin-inline:auto;border-radius:16px}
+.screens figcaption{margin-top:16px;font-size:15px;color:var(--ink-2);text-align:center}
+.screens figcaption b{color:var(--ink)}
+@media (max-width:720px){.screens{grid-template-columns:1fr}}
+
+/* loop */
+.loop{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:44px;counter-reset:s}
+@media (max-width:880px){.loop{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.loop{grid-template-columns:1fr}}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;position:relative;overflow:hidden}
+.step::before{counter-increment:s;content:"0" counter(s);font-weight:800;font-size:13px;color:var(--ink-3)}
+.step::after{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:var(--c)}
+.step h3{font-size:20px;letter-spacing:-.02em;margin:8px 0 6px}
+.step p{font-size:15px;color:var(--ink-2)}
+.chip{display:inline-block;margin-top:12px;font-size:12px;font-weight:600;padding:4px 9px;border-radius:999px;background:color-mix(in srgb,var(--c) 14%,transparent);color:var(--ink)}
+
+/* features */
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:22px;overflow:hidden;margin-top:44px}
+@media (max-width:880px){.features{grid-template-columns:1fr}}
+.feature{background:var(--panel);padding:28px}
+.feature .ico{font-size:26px}
+.feature h3{font-size:18px;margin:10px 0 6px;letter-spacing:-.01em}
+.feature p{font-size:15px;color:var(--ink-2)}
+
+/* engineering */
+.eng{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:40px}
+@media (max-width:880px){.eng{grid-template-columns:1fr}}
+.eng ul{list-style:none;display:grid;gap:18px}
+.eng li{padding-left:22px;position:relative;color:var(--ink-2);font-size:16px}
+.eng li::before{content:"";position:absolute;left:0;top:.6em;width:9px;height:9px;border-radius:3px;background:var(--accent)}
+.eng li b{color:var(--ink)}
+.stack{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.stack span{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:7px 12px;font-size:14px;font-weight:550}
+.arch{margin-top:48px;border-radius:22px;border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow)}
+.arch img{display:block;width:100%;height:auto}
+
+/* cta */
+.final{text-align:center}
+.final .sub{margin-inline:auto}
+.final .ctas{justify-content:center}
+code{font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+pre{display:block;width:fit-content;margin:28px auto 0;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px;overflow-x:auto;max-width:100%}
+
+footer{border-top:1px solid var(--line);padding:32px 0 48px;color:var(--ink-3);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="img/icon.png" alt="">fluentoo</a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#how">How it works</a>
+      <a class="hide-sm" href="#engineering">Engineering</a>
+      <a href="https://github.com/kaiser-data/fluento">GitHub</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div>
+      <span class="kicker"><span class="dots"><i style="background:var(--yellow)"></i><i style="background:var(--red)"></i><i style="background:var(--purple)"></i><i style="background:var(--green)"></i></span>Desktop companion · Open source</span>
+      <h1>Speak German <em>every day.</em></h1>
+      <p class="lede">Fluentoo floats on your desktop, hands you a two-minute speaking mission, listens, answers in German, and corrects you the way a friend would.</p>
+      <div class="ctas">
+        <a class="btn btn-dark" href="https://github.com/kaiser-data/fluento">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          View source
+        </a>
+        <a class="btn btn-ghost" href="#how">See how it works ↓</a>
+      </div>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="halo"></div>
+      <img src="img/avatar.webp" width="640" height="670" alt="">
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="product">
+    <div class="wrap">
+      <span class="eyebrow">The product</span>
+      <h2>Small enough to keep open. Friendly enough to come back to.</h2>
+      <p class="sub">A frameless, always-on-top window. Pick today's mission, hit <b>Sprechen</b>, and talk. The character reacts to how it went, the streak keeps you honest, and corrections show up as <i>“Man sagt besser …”</i> instead of red ink.</p>
+      <div class="screens">
+        <figure>
+          <img src="img/home.webp" width="840" height="1520" alt="Fluentoo window showing the avatar, three daily missions, the Sprechen button and a five-stage progress track">
+          <figcaption><b>Daily missions.</b> Three short speaking prompts, rotated each day.</figcaption>
+        </figure>
+        <figure>
+          <img src="img/conversation.webp" width="840" height="1520" alt="Fluentoo after a completed mission: emoji confetti, a 'Mission geschafft' banner and a correction card reading 'Ich habe Kaffee getrunken.'">
+          <figcaption><b>Gentle corrections.</b> Mistakes become a “Besser gesagt” card, not a failure.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <span class="eyebrow">How it works</span>
+      <h2>One loop, tuned for speaking.</h2>
+      <p class="sub">The whole design goal is latency: if a reply takes too long, speaking stops feeling like a conversation.</p>
+      <div class="loop">
+        <div class="step" style="--c:var(--green)"><h3>Speak</h3><p>Talk into the mic, or type if you're on a train.</p><span class="chip">MediaRecorder · Web Speech</span></div>
+        <div class="step" style="--c:var(--yellow)"><h3>Transcribe</h3><p>Fast hosted Whisper first; on-device Whisper when you're offline or keyless.</p><span class="chip">Groq · transformers.js</span></div>
+        <div class="step" style="--c:var(--purple)"><h3>Coach</h3><p>An LLM tutor replies in simple A2–B1 German and judges the mission.</p><span class="chip">Featherless · Obsidian notes</span></div>
+        <div class="step" style="--c:var(--red)"><h3>Reply</h3><p>The answer is spoken in a natural German voice, with browser speech as fallback.</p><span class="chip">CambAI TTS</span></div>
+      </div>
+
+      <div class="features">
+        <div class="feature"><div class="ico">🎯</div><h3>Daily missions</h3><p>Morgen-Check, Restaurant, Wochenende, Mini-Story. Any genuine attempt counts.</p></div>
+        <div class="feature"><div class="ico">🌱</div><h3>Five fluency stages</h3><p>XP, a streak multiplier and level-up moments from Schüchtern to Fluentoo Level.</p></div>
+        <div class="feature"><div class="ico">😄</div><h3>A character with moods</h3><p>The avatar laughs, smiles or looks a little sad depending on how the round went.</p></div>
+        <div class="feature"><div class="ico">📓</div><h3>Your own vocabulary</h3><p>Point it at an Obsidian vault and your word lists flow into the tutor's context.</p></div>
+        <div class="feature"><div class="ico">⏰</div><h3>Habit nudges</h3><p>A gentle reminder every 45 minutes keeps the streak alive.</p></div>
+        <div class="feature"><div class="ico">🔒</div><h3>Local first</h3><p>Progress and settings stay on your machine. Bring your own API keys.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="engineering">
+    <div class="wrap">
+      <span class="eyebrow">Engineering</span>
+      <h2>Decisions worth explaining.</h2>
+      <div class="eng">
+        <ul>
+          <li><b>Graceful degradation everywhere.</b> Hosted STT → local Whisper; CambAI voice → browser speech. With zero keys besides the LLM, it still works end to end.</li>
+          <li><b>Structured output from a chatty model.</b> The tutor ends mission replies with a <code>MISSION_RESULT: PASS|FAIL</code> line that's parsed and stripped; a local heuristic covers the case where the model forgets.</li>
+          <li><b>Secure Electron defaults.</b> Context isolation on, no Node in the renderer, a narrow preload bridge and a strict Content-Security-Policy.</li>
+          <li><b>No UI framework.</b> The avatar, emotions and confetti are plain CSS (conic gradients and keyframes), so the window idles at near-zero cost.</li>
+        </ul>
+        <div>
+          <p class="sub">Built as a hackathon project and kept small on purpose: about 2,300 lines of vanilla JavaScript, HTML and CSS.</p>
+          <div class="stack">
+            <span>Electron 31</span><span>Node.js</span><span>OpenAI-compatible SDK</span><span>Featherless</span><span>Groq Whisper</span><span>transformers.js</span><span>CambAI</span><span>electron-store</span><span>Vanilla JS/CSS</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch"><img src="img/architecture.webp" width="1600" height="1025" alt="Architecture overview: Speak, Transcribe, Coach, Reply, with the Electron screen, preload bridge, speech, teacher and storage layers" loading="lazy"></div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2>Try it locally.</h2>
+      <p class="sub">macOS tested. You need a Featherless key for the tutor; voice keys are optional.</p>
+      <pre><code>git clone https://github.com/kaiser-data/fluento
+cd fluento && npm install
+cp .env.example .env   # add your keys
+npm start</code></pre>
+      <div class="ctas"><a class="btn btn-dark" href="https://github.com/kaiser-data/fluento">Open on GitHub →</a></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Fluentoo · MIT licensed · by <a href="https://github.com/kaiser-data">kaiser-data</a></span>
+    <span>Warm · Curious · Precise · Patient</span>
+  </div>
+</footer>
+</body>
+</html>
